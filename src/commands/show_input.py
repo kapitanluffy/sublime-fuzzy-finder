@@ -1,5 +1,5 @@
 from ..utils import run_command
-from ..Terminal import Terminal, close_results_view
+from ..Terminal import FastFuzzyFinder, close_results_view
 import threading
 import sublime
 import sublime_plugin
@@ -11,12 +11,12 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
     input_panel_view = None
 
     def get_terminal(self):
-        if Terminal.sheet is None or Terminal.sheet.window() is None:
-            Terminal.sheet = self.window.new_file(
+        if FastFuzzyFinder.sheet is None or FastFuzzyFinder.sheet.window() is None:
+            FastFuzzyFinder.sheet = self.window.new_file(
                 flags=sublime.ADD_TO_SELECTION
             )
 
-        return Terminal.sheet
+        return FastFuzzyFinder.sheet
 
     def run(self):
         terminal_sheet = self.get_terminal()
@@ -43,53 +43,53 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         self.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
         self.input_panel_view.settings().set("fast_fuzzy_find", True)
 
-        Terminal.is_input_open = True
+        FastFuzzyFinder.is_input_open = True
 
     def on_done(self, inp: str):
         self.input_panel_view = None
-        Terminal.sheet.window().run_command("fast_fuzzy_find_open_line")
+        FastFuzzyFinder.sheet.window().run_command("fast_fuzzy_find_open_line")
 
     def on_search(self, inp: str):
         if self.query != inp or self.query == "":
             return
 
-        Terminal.is_input_open = False
+        FastFuzzyFinder.is_input_open = False
 
         # get the first folder for now
         folder = self.window.folders()[0]
 
-        if Terminal.thread is None:
-            Terminal.thread_output = Queue()
-            Terminal.thread_input = Queue()
-            Terminal.thread = threading.Thread(
+        if FastFuzzyFinder.thread is None:
+            FastFuzzyFinder.thread_output = Queue()
+            FastFuzzyFinder.thread_input = Queue()
+            FastFuzzyFinder.thread = threading.Thread(
                 target=run_command,
-                args=(inp, r'%s' % folder, Terminal.thread_output, Terminal.thread_input)
+                args=(inp, r'%s' % folder, FastFuzzyFinder.thread_output, FastFuzzyFinder.thread_input)
             )
-            Terminal.thread.start()
+            FastFuzzyFinder.thread.start()
 
         POLL_COUNT = 0
-        Terminal.sheet.run_command("fast_fuzzy_find_reset_output")
+        FastFuzzyFinder.sheet.run_command("fast_fuzzy_find_reset_output")
 
         while True:
-            Terminal.thread.join(0.1)
+            FastFuzzyFinder.thread.join(0.1)
 
             lines = []
-            while Terminal.thread_output and Terminal.thread_output.empty() is False:
-                line, ltype = Terminal.thread_output.get()
+            while FastFuzzyFinder.thread_output and FastFuzzyFinder.thread_output.empty() is False:
+                line, ltype = FastFuzzyFinder.thread_output.get()
                 lines.append(line.rstrip())
 
             content = '\n'.join(lines)
-            Terminal.sheet.run_command("fast_fuzzy_find_update_output", {"line": content})
+            FastFuzzyFinder.sheet.run_command("fast_fuzzy_find_update_output", {"line": content})
 
-            if Terminal.thread.is_alive() is False or POLL_COUNT > 5:
-                Terminal.output = []
-                Terminal.thread = None
+            if FastFuzzyFinder.thread.is_alive() is False or POLL_COUNT > 5:
+                FastFuzzyFinder.output = []
+                FastFuzzyFinder.thread = None
                 break
             POLL_COUNT = POLL_COUNT + 1
 
-        lines = Terminal.sheet.lines(sublime.Region(0, Terminal.sheet.size()))
-        Terminal.sheet.sel().clear()
-        Terminal.sheet.sel().add(lines[0].a)
+        lines = FastFuzzyFinder.sheet.lines(sublime.Region(0, FastFuzzyFinder.sheet.size()))
+        FastFuzzyFinder.sheet.sel().clear()
+        FastFuzzyFinder.sheet.sel().add(lines[0].a)
         self.query = ""
         self.window.focus_view(self.input_panel_view)
 
@@ -100,7 +100,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         self.query = inp
 
     def on_cancel(self, *args):
-        Terminal.is_input_open = False
+        FastFuzzyFinder.is_input_open = False
         self.input_panel_view = None
         close_results_view()
 

@@ -3,7 +3,7 @@ import select
 import sys
 import threading
 from typing import Generator, Literal
-from .Terminal import Terminal
+from .Terminal import FastFuzzyFinder
 
 # read_fd, write_fd = os.pipe()
 # python -c "print('hello!');x=input('Enter something: ');print(x)"
@@ -23,17 +23,17 @@ HTML = "<body><style>%s</style>{body}</body>" % STYLE
 def output_sheet():
     print("output sheet thread!")
     while True:
-        if Terminal.process.stdout is None:
+        if FastFuzzyFinder.process.stdout is None:
             print("bb")
             continue
 
-        line = Terminal.process.stdout.readline()
+        line = FastFuzzyFinder.process.stdout.readline()
 
         if not line:
             print("no output lines")
             break
 
-        if Terminal.sheet is None:
+        if FastFuzzyFinder.sheet is None:
             print("sheet is gone")
             break
 
@@ -47,7 +47,7 @@ def output_sheet():
         #     line = "<div style=\"margin-bottom:1rem;\">&nbsp;</div>"
 
         print("> ", line)
-        Terminal.thread_output.put([line, 'ok'])
+        FastFuzzyFinder.thread_output.put([line, 'ok'])
         # content = HTML.format(body=' '.join(Terminal.output))
         # Terminal.sheet.set_contents(content)
     print("output sheet done!")
@@ -55,9 +55,9 @@ def output_sheet():
 
 def append_sheet_content(output: str):
     line = "<div style=\"margin-bottom:1rem;\">%s</div>" % output
-    Terminal.output.append(line)
-    content = HTML.format(body=' '.join(Terminal.output))
-    Terminal.sheet.set_contents(content)
+    FastFuzzyFinder.output.append(line)
+    content = HTML.format(body=' '.join(FastFuzzyFinder.output))
+    FastFuzzyFinder.sheet.set_contents(content)
 
 
 def run_command(command: str, directory: str, output, input):
@@ -67,7 +67,7 @@ def run_command(command: str, directory: str, output, input):
         # print("cwd", "cd \"%s\" && d:/~/bin/fzf.exe" % directory)
 
         cmd = "rg --column --no-heading --smart-case -e \"%s\" ./" % command
-        Terminal.process = subprocess.Popen(
+        FastFuzzyFinder.process = subprocess.Popen(
             cmd,
             shell=True,
             text=True,
@@ -81,10 +81,10 @@ def run_command(command: str, directory: str, output, input):
         )
 
         while True:
-            for line in Terminal.process.stdout:  # type: ignore
+            for line in FastFuzzyFinder.process.stdout:  # type: ignore
                 output.put([line, 'ok'])
 
-            return_code = Terminal.process.poll()
+            return_code = FastFuzzyFinder.process.poll()
 
             if return_code is not None:
                 break

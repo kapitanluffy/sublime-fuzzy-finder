@@ -5,7 +5,7 @@ from typing import List, Optional
 import sublime
 
 
-class Terminal:
+class FastFuzzyFinder:
     sheet: Optional[sublime.View] = None
     output: List[str] = []
     process: Optional[subprocess.Popen] = None
@@ -19,10 +19,10 @@ class Terminal:
 
 
 def close_results_view():
-    if Terminal.sheet is None:
+    if FastFuzzyFinder.sheet is None:
         return
 
     def clear_view(_: bool):
-        Terminal.sheet = None
+        FastFuzzyFinder.sheet = None
 
-    Terminal.sheet.close(clear_view)
+    FastFuzzyFinder.sheet.close(clear_view)
