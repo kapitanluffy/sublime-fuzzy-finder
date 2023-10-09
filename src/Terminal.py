@@ -7,6 +7,9 @@ import sublime
 
 class FastFuzzyFinder:
     sheet: Optional[sublime.View] = None
+    input_panel_view: Optional[sublime.View] = None
+    preview_view: Optional[sublime.View] = None
+    preview_view_path: Optional[str] = None
     output: List[str] = []
     process: Optional[subprocess.Popen] = None
     thread: Optional[threading.Thread] = None

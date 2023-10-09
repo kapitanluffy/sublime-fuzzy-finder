@@ -2,14 +2,11 @@
     {
         "keys": ["alt+shift+`"],
         "command": "fast_fuzzy_find_show_input",
-        "context": [
-            { "key": "fast_fuzzy_find" }
-        ]
     },
     {
         "keys": ["up"],
         "context": [
-            { "key": "setting.fast_fuzzy_find" }
+            { "key": "setting.fast_fuzzy_find.input_panel" }
         ],
         "command": "fast_fuzzy_find_move_lines",
         "args": { "forward": false }
@@ -17,9 +14,16 @@
     {
         "keys": ["down"],
         "context": [
-            { "key": "setting.fast_fuzzy_find" }
+            { "key": "setting.fast_fuzzy_find.input_panel" }
         ],
         "command": "fast_fuzzy_find_move_lines",
         "args": { "forward": true }
+    },
+    {
+        "keys": ["enter"],
+        "context": [
+            { "key": "setting.fast_fuzzy_find.results_panel" }
+        ],
+        "command": "fast_fuzzy_find_open_line"
     },
 ]

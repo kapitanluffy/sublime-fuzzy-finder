@@ -8,13 +8,10 @@ from queue import Queue
 
 class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
     query = ""
-    input_panel_view = None
 
     def get_terminal(self):
         if FastFuzzyFinder.sheet is None or FastFuzzyFinder.sheet.window() is None:
-            FastFuzzyFinder.sheet = self.window.new_file(
-                flags=sublime.ADD_TO_SELECTION
-            )
+            FastFuzzyFinder.sheet = self.window.new_file()
 
         return FastFuzzyFinder.sheet
 
@@ -40,13 +37,14 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
 
         terminal_sheet.set_scratch(True)
         terminal_sheet.set_name("Fuzzy Find 🔍")
-        self.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
-        self.input_panel_view.settings().set("fast_fuzzy_find", True)
+        FastFuzzyFinder.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
+        FastFuzzyFinder.input_panel_view.settings().set("fast_fuzzy_find.input_panel", True)
+        FastFuzzyFinder.sheet.settings().set("fast_fuzzy_find.results_panel", True)
 
         FastFuzzyFinder.is_input_open = True
 
     def on_done(self, inp: str):
-        self.input_panel_view = None
+        FastFuzzyFinder.input_panel_view = None
         FastFuzzyFinder.sheet.window().run_command("fast_fuzzy_find_open_line")
 
     def on_search(self, inp: str):
@@ -91,7 +89,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         FastFuzzyFinder.sheet.sel().clear()
         FastFuzzyFinder.sheet.sel().add(lines[0].a)
         self.query = ""
-        self.window.focus_view(self.input_panel_view)
+        self.window.focus_view(FastFuzzyFinder.input_panel_view)
 
     def on_change(self, inp: str):
         if inp == "":
@@ -101,6 +99,4 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
 
     def on_cancel(self, *args):
         FastFuzzyFinder.is_input_open = False
-        self.input_panel_view = None
-        close_results_view()
-
+        FastFuzzyFinder.input_panel_view = None
