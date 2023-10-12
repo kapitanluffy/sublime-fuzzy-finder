@@ -9,17 +9,12 @@ from queue import Queue
 class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
     query = ""
 
-    def get_terminal(self):
+    def run(self):
+        if FastFuzzyFinder.sheet is not None:
+            self.window.focus_view(FastFuzzyFinder.sheet)
+
         if FastFuzzyFinder.sheet is None or FastFuzzyFinder.sheet.window() is None:
             FastFuzzyFinder.sheet = self.window.new_file()
-
-        return FastFuzzyFinder.sheet
-
-    def run(self):
-        terminal_sheet = self.get_terminal()
-
-        # content = HTML.format(body=' '.join(Terminal.output))
-        # terminal_sheet.set_contents(content)
 
         view = self.window.active_view()
 
@@ -27,16 +22,13 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
             return
 
         sheet = view.sheet()
-        tsheet = terminal_sheet.sheet()
+        tsheet = FastFuzzyFinder.sheet.sheet()
 
         if sheet is None or tsheet is None:
             return
 
-        # self.window.select_sheets([sheet, tsheet])
-        # self.window.focus_view(view)
-
-        terminal_sheet.set_scratch(True)
-        terminal_sheet.set_name("Fuzzy Find 🔍")
+        FastFuzzyFinder.sheet.set_scratch(True)
+        FastFuzzyFinder.sheet.set_name("Live Grep 🔍")
         FastFuzzyFinder.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
         FastFuzzyFinder.input_panel_view.settings().set("fast_fuzzy_find.input_panel", True)
         FastFuzzyFinder.sheet.settings().set("fast_fuzzy_find.results_panel", True)
