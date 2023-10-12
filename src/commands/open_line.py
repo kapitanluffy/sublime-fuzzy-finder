@@ -6,15 +6,15 @@ from ..Terminal import FastFuzzyFinder
 
 class FastFuzzyFindOpenLineCommand(sublime_plugin.WindowCommand):
     def run(self):
-        if FastFuzzyFinder.sheet is None:
+        if FastFuzzyFinder.search_result_view is None:
             return
 
-        result_sheet = FastFuzzyFinder.sheet.sheet()
+        result_sheet = FastFuzzyFinder.search_result_view.sheet()
         if result_sheet is None:
             return
 
-        line = FastFuzzyFinder.sheet.line(FastFuzzyFinder.sheet.sel()[0])
-        line = FastFuzzyFinder.sheet.substr(line)
+        line = FastFuzzyFinder.search_result_view.line(FastFuzzyFinder.search_result_view.sel()[0])
+        line = FastFuzzyFinder.search_result_view.substr(line)
         segments = line.split(':')
         file = ':'.join(segments[:3])
         folder = self.window.folders()[0]

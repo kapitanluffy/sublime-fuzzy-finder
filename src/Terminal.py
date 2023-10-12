@@ -6,7 +6,7 @@ import sublime
 
 
 class FastFuzzyFinder:
-    sheet: Optional[sublime.View] = None
+    search_result_view: Optional[sublime.View] = None
     input_panel_view: Optional[sublime.View] = None
     preview_view: Optional[sublime.View] = None
     preview_view_path: Optional[str] = None
@@ -22,10 +22,10 @@ class FastFuzzyFinder:
 
 
 def close_results_view():
-    if FastFuzzyFinder.sheet is None:
+    if FastFuzzyFinder.search_result_view is None:
         return
 
     def clear_view(_: bool):
-        FastFuzzyFinder.sheet = None
+        FastFuzzyFinder.search_result_view = None
 
-    FastFuzzyFinder.sheet.close(clear_view)
+    FastFuzzyFinder.search_result_view.close(clear_view)

@@ -10,11 +10,11 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
     query = ""
 
     def run(self):
-        if FastFuzzyFinder.sheet is not None:
-            self.window.focus_view(FastFuzzyFinder.sheet)
+        if FastFuzzyFinder.search_result_view is not None:
+            self.window.focus_view(FastFuzzyFinder.search_result_view)
 
-        if FastFuzzyFinder.sheet is None or FastFuzzyFinder.sheet.window() is None:
-            FastFuzzyFinder.sheet = self.window.new_file()
+        if FastFuzzyFinder.search_result_view is None or FastFuzzyFinder.search_result_view.window() is None:
+            FastFuzzyFinder.search_result_view = self.window.new_file()
 
         view = self.window.active_view()
 
@@ -22,22 +22,22 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
             return
 
         sheet = view.sheet()
-        tsheet = FastFuzzyFinder.sheet.sheet()
+        tsheet = FastFuzzyFinder.search_result_view.sheet()
 
         if sheet is None or tsheet is None:
             return
 
-        FastFuzzyFinder.sheet.set_scratch(True)
-        FastFuzzyFinder.sheet.set_name("Live Grep 🔍")
+        FastFuzzyFinder.search_result_view.set_scratch(True)
+        FastFuzzyFinder.search_result_view.set_name("Live Grep 🔍")
         FastFuzzyFinder.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
         FastFuzzyFinder.input_panel_view.settings().set("fast_fuzzy_find.input_panel", True)
-        FastFuzzyFinder.sheet.settings().set("fast_fuzzy_find.results_panel", True)
+        FastFuzzyFinder.search_result_view.settings().set("fast_fuzzy_find.results_panel", True)
 
         FastFuzzyFinder.is_input_open = True
 
     def on_done(self, inp: str):
         FastFuzzyFinder.input_panel_view = None
-        FastFuzzyFinder.sheet.window().run_command("fast_fuzzy_find_open_line")
+        FastFuzzyFinder.search_result_view.window().run_command("fast_fuzzy_find_open_line")
 
     def on_search(self, inp: str):
         if self.query != inp or self.query == "":
@@ -58,7 +58,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
             FastFuzzyFinder.thread.start()
 
         POLL_COUNT = 0
-        FastFuzzyFinder.sheet.run_command("fast_fuzzy_find_reset_output")
+        FastFuzzyFinder.search_result_view.run_command("fast_fuzzy_find_reset_output")
 
         while True:
             FastFuzzyFinder.thread.join(0.1)
@@ -69,7 +69,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
                 lines.append(line.rstrip())
 
             content = '\n'.join(lines)
-            FastFuzzyFinder.sheet.run_command("fast_fuzzy_find_update_output", {"line": content})
+            FastFuzzyFinder.search_result_view.run_command("fast_fuzzy_find_update_output", {"line": content})
 
             if FastFuzzyFinder.thread.is_alive() is False or POLL_COUNT > 5:
                 FastFuzzyFinder.output = []
@@ -77,9 +77,9 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
                 break
             POLL_COUNT = POLL_COUNT + 1
 
-        lines = FastFuzzyFinder.sheet.lines(sublime.Region(0, FastFuzzyFinder.sheet.size()))
-        FastFuzzyFinder.sheet.sel().clear()
-        FastFuzzyFinder.sheet.sel().add(lines[0].a)
+        lines = FastFuzzyFinder.search_result_view.lines(sublime.Region(0, FastFuzzyFinder.search_result_view.size()))
+        FastFuzzyFinder.search_result_view.sel().clear()
+        FastFuzzyFinder.search_result_view.sel().add(lines[0].a)
         self.query = ""
         self.window.focus_view(FastFuzzyFinder.input_panel_view)
 
