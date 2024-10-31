@@ -4,7 +4,7 @@ from .Terminal import FastFuzzyFinder
 
 def run_command(command: str, directory: str, output, input):
     try:
-        cmd = "rg --column --no-heading --smart-case %s ./" % command
+        cmd = "rg --column --no-heading --hidden --iglob \"!.git/\" --smart-case \"%s\" ./" % command
         FastFuzzyFinder.process = subprocess.Popen(
             cmd,
             shell=True,
