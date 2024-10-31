@@ -40,7 +40,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         FastFuzzyFinder.search_result_view.window().run_command("fast_fuzzy_find_open_line")
 
     def on_search(self, inp: str):
-        if self.query != inp or self.query == "":
+        if FastFuzzyFinder.query != inp or FastFuzzyFinder.query == "":
             return
 
         FastFuzzyFinder.is_input_open = False
@@ -80,14 +80,13 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         lines = FastFuzzyFinder.search_result_view.lines(sublime.Region(0, FastFuzzyFinder.search_result_view.size()))
         FastFuzzyFinder.search_result_view.sel().clear()
         FastFuzzyFinder.search_result_view.sel().add(lines[0].a)
-        self.query = ""
         self.window.focus_view(FastFuzzyFinder.input_panel_view)
 
     def on_change(self, inp: str):
         if inp == "":
             return
+        FastFuzzyFinder.query = inp
         sublime.set_timeout_async(lambda inp=inp: self.on_search(inp), 150)
-        self.query = inp
 
     def on_cancel(self, *args):
         FastFuzzyFinder.is_input_open = False

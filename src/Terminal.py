@@ -6,6 +6,7 @@ import sublime
 
 
 class FastFuzzyFinder:
+    query: str
     search_result_view: Optional[sublime.View] = None
     input_panel_view: Optional[sublime.View] = None
     preview_view: Optional[sublime.View] = None
