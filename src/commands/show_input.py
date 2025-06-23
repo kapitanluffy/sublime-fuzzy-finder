@@ -29,6 +29,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
 
         FastFuzzyFinder.search_result_view.set_scratch(True)
         FastFuzzyFinder.search_result_view.set_name("Live Grep 🔍")
+        FastFuzzyFinder.search_result_view.settings().set("word_wrap", False)
         FastFuzzyFinder.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
         FastFuzzyFinder.input_panel_view.settings().set("fast_fuzzy_find.input_panel", True)
         FastFuzzyFinder.search_result_view.settings().set("fast_fuzzy_find.results_panel", True)
