@@ -87,7 +87,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
         if inp == "":
             return
         FastFuzzyFinder.query = inp
-        sublime.set_timeout_async(lambda inp=inp: self.on_search(inp), 150)
+        sublime.set_timeout_async(lambda inp=inp: self.on_search(inp), 500)
 
     def on_cancel(self, *args):
         FastFuzzyFinder.is_input_open = False
