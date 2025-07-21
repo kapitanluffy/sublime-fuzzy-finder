@@ -2,9 +2,9 @@ import subprocess
 from .Terminal import FastFuzzyFinder
 
 
-def run_command(command: str, directory: str, output, input):
+def run_ripgrep_command(query_string: str, directory: str, output, input):
     try:
-        cmd = "rg --column --no-heading --hidden --iglob \"!.git/\" --smart-case \"%s\" ./" % command
+        cmd = "rg --column --no-heading --hidden --iglob \"!.git/\" --smart-case \"%s\" ./" % query_string
         FastFuzzyFinder.process = subprocess.Popen(
             cmd,
             shell=True,

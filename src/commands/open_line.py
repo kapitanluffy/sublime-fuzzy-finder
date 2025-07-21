@@ -2,40 +2,36 @@ import os
 import sublime
 import sublime_plugin
 from ..Terminal import FastFuzzyFinder
+from ..state import FUZZY_FINDER_IO_PANEL_NAME, FuzzyFinderState
 
+class FastFuzzyFindOpenLineCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        window = self.view.window()
 
-class FastFuzzyFindOpenLineCommand(sublime_plugin.WindowCommand):
-    def run(self):
-        if FastFuzzyFinder.search_result_view is None:
+        if window is None:
             return
 
-        result_sheet = FastFuzzyFinder.search_result_view.sheet()
-        if result_sheet is None:
+        [_, input_view] = window.find_io_panel(FUZZY_FINDER_IO_PANEL_NAME)
+        if input_view is None:
             return
 
-        line = FastFuzzyFinder.search_result_view.line(FastFuzzyFinder.search_result_view.sel()[0])
-        line = FastFuzzyFinder.search_result_view.substr(line)
+        line = self.view.line(self.view.sel()[0])
+        line = self.view.substr(line)
         segments = line.split(':')
         file = ':'.join(segments[:3])
-        folder = self.window.folders()[0]
+        folder = window.folders()[0]
         fullpath = os.path.abspath(os.path.join(folder, file))
 
-        if FastFuzzyFinder.preview_view_path == fullpath:
-            return
-
-        if FastFuzzyFinder.preview_view is not None:
-            def _(_):
-                FastFuzzyFinder.preview_view = None
-            FastFuzzyFinder.preview_view.close(_)
-
-        FastFuzzyFinder.preview_view_path = fullpath
-        FastFuzzyFinder.preview_view = self.window.open_file(
+        FastFuzzyFinder.preview_view = window.open_file(
             fullpath,
-            sublime.ENCODED_POSITION + sublime.FORCE_GROUP + sublime.FORCE_CLONE + sublime.SEMI_TRANSIENT + sublime.ADD_TO_SELECTION
+            sublime.ENCODED_POSITION + sublime.FORCE_GROUP  # pyright: ignore[reportArgumentType]
         )
-        new_sheet = FastFuzzyFinder.preview_view.sheet()
 
+        FuzzyFinderState.set_result_view(FastFuzzyFinder.preview_view)
+        FastFuzzyFinder.preview_view.settings().set("fast_fuzzy_find.result_view", True)
+
+        window.focus_view(input_view)
+
+        new_sheet = FastFuzzyFinder.preview_view.sheet()
         if new_sheet is None:
             return
-
-        self.window.focus_sheet(result_sheet)

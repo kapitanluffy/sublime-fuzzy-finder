@@ -1,65 +1,90 @@
-from ..utils import run_command
-from ..Terminal import FastFuzzyFinder, close_results_view
+from typing_extensions import override
+
+from ..state import FUZZY_FINDER_IO_PANEL_NAME, FuzzyFinderState
+
+from ..utils import run_ripgrep_command
+from ..Terminal import FastFuzzyFinder
 import threading
 import sublime
 import sublime_plugin
 from queue import Queue
 
-
 class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
-    query = ""
+    def __init__(self, window: sublime.Window):
+        self.query: str = ""
+        super().__init__(window)
 
+    @override
     def run(self):
-        if FastFuzzyFinder.search_result_view is not None:
-            self.window.focus_view(FastFuzzyFinder.search_result_view)
+        [output_view, input_view] = self.window.find_io_panel(FUZZY_FINDER_IO_PANEL_NAME)
 
-        if FastFuzzyFinder.search_result_view is None or FastFuzzyFinder.search_result_view.window() is None:
-            FastFuzzyFinder.search_result_view = self.window.new_file()
+        if output_view is None or input_view is None:
+            [output_view, input_view] = self.window.create_io_panel(FUZZY_FINDER_IO_PANEL_NAME, self.on_done)
 
-        view = self.window.active_view()
+        output_view.set_scratch(True)
+        output_view.set_name("Live Grep 🔍")
+        output_view.settings().set("word_wrap", False)
+        output_view.settings().set("fast_fuzzy_find.results_panel", True)
 
-        if view is None:
-            return
-
-        sheet = view.sheet()
-        tsheet = FastFuzzyFinder.search_result_view.sheet()
-
-        if sheet is None or tsheet is None:
-            return
-
-        FastFuzzyFinder.search_result_view.set_scratch(True)
-        FastFuzzyFinder.search_result_view.set_name("Live Grep 🔍")
-        FastFuzzyFinder.search_result_view.settings().set("word_wrap", False)
-        FastFuzzyFinder.input_panel_view = self.window.show_input_panel("Fuzzy Find", "", self.on_done, self.on_change, self.on_cancel)
-        FastFuzzyFinder.input_panel_view.settings().set("fast_fuzzy_find.input_panel", True)
-        FastFuzzyFinder.search_result_view.settings().set("fast_fuzzy_find.results_panel", True)
-
+        input_view.settings().set("fast_fuzzy_find.input_panel", True)
         FastFuzzyFinder.is_input_open = True
 
-    def on_done(self, inp: str):
-        FastFuzzyFinder.input_panel_view = None
-        FastFuzzyFinder.search_result_view.window().run_command("fast_fuzzy_find_open_line")
+        self.window.run_command("show_panel", { "panel": f"output.{FUZZY_FINDER_IO_PANEL_NAME}" })
 
-    def on_search(self, inp: str):
-        if FastFuzzyFinder.query != inp or FastFuzzyFinder.query == "":
+        # Autoselect the previous search for seamless input
+        entire_region = sublime.Region(0, input_view.size())
+        input_view.sel().clear()
+        input_view.sel().add(entire_region)
+
+    def on_done(self, inp: str):
+        [output_panel, input_view] = self.window.find_io_panel(FUZZY_FINDER_IO_PANEL_NAME)
+
+        if input_view is None or output_panel is None:
+            return
+
+        # content = input_view.substr(sublime.Region(0, input_view.size()))
+        # FuzzyFinderState.toggle_running(True)
+        input_view.run_command("fast_fuzzy_find_update_output", {"line": inp})
+        output_panel.run_command("fast_fuzzy_find_open_line")
+        pass
+
+    @classmethod
+    def on_search(cls, inp: str):
+        FUZZY_FINDER_QUERY = FuzzyFinderState.getQuery()
+        [output_view, input_view] = sublime.active_window().find_io_panel(FUZZY_FINDER_IO_PANEL_NAME)
+
+        if output_view is None or input_view is None:
+            return
+
+        if FuzzyFinderState.is_running() is True:
+            return
+
+        if FUZZY_FINDER_QUERY != inp or FUZZY_FINDER_QUERY == "":
             return
 
         FastFuzzyFinder.is_input_open = False
 
         # get the first folder for now
-        folder = self.window.folders()[0]
+        folders = sublime.active_window().folders()
+        folder = folders[0] if folders.__len__() > 0 else None
+
+        if folder is None:
+            return
+
+        FuzzyFinderState.toggle_running(True)
+        print("fuzzy run!")
 
         if FastFuzzyFinder.thread is None:
             FastFuzzyFinder.thread_output = Queue()
             FastFuzzyFinder.thread_input = Queue()
             FastFuzzyFinder.thread = threading.Thread(
-                target=run_command,
+                target=run_ripgrep_command,
                 args=(inp, r'%s' % folder, FastFuzzyFinder.thread_output, FastFuzzyFinder.thread_input)
             )
             FastFuzzyFinder.thread.start()
 
         POLL_COUNT = 0
-        FastFuzzyFinder.search_result_view.run_command("fast_fuzzy_find_reset_output")
+        output_view.run_command("fast_fuzzy_find_reset_output")
 
         while True:
             FastFuzzyFinder.thread.join(0.1)
@@ -70,7 +95,7 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
                 lines.append(line.rstrip())
 
             content = '\n'.join(lines)
-            FastFuzzyFinder.search_result_view.run_command("fast_fuzzy_find_update_output", {"line": content})
+            output_view.run_command("fast_fuzzy_find_update_output", {"line": content})
 
             if FastFuzzyFinder.thread.is_alive() is False or POLL_COUNT > 5:
                 FastFuzzyFinder.output = []
@@ -78,17 +103,8 @@ class FastFuzzyFindShowInputCommand(sublime_plugin.WindowCommand):
                 break
             POLL_COUNT = POLL_COUNT + 1
 
-        lines = FastFuzzyFinder.search_result_view.lines(sublime.Region(0, FastFuzzyFinder.search_result_view.size()))
-        FastFuzzyFinder.search_result_view.sel().clear()
-        FastFuzzyFinder.search_result_view.sel().add(lines[0].a)
-        self.window.focus_view(FastFuzzyFinder.input_panel_view)
-
-    def on_change(self, inp: str):
-        if inp == "":
-            return
-        FastFuzzyFinder.query = inp
-        sublime.set_timeout_async(lambda inp=inp: self.on_search(inp), 500)
-
-    def on_cancel(self, *args):
-        FastFuzzyFinder.is_input_open = False
-        FastFuzzyFinder.input_panel_view = None
+        lines = output_view.lines(sublime.Region(0, output_view.size()))
+        output_view.sel().clear()
+        output_view.sel().add(lines[0].a)
+        sublime.active_window().focus_view(input_view)
+        sublime.set_timeout_async(lambda: FuzzyFinderState.toggle_running(False), 100)
